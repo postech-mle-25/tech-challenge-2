@@ -1,0 +1,19 @@
+# Exemplo de configuração para terraform.tfvars
+# Copie este arquivo para terraform.tfvars e ajuste os valores conforme necessário
+
+# Região AWS para criar os recursos
+aws_region = "us-east-1"
+
+# Nome do ambiente
+environment = "Academy"
+
+# Nome do bucket S3 (deve ser globalmente único)
+# Recomendação: use seu nome/organização + sufixo único
+bucket_name = "fiap-2025-tech02-b3-glue"
+
+# Forçar destruição do bucket mesmo se não estiver vazio
+# CUIDADO: true permite deletar bucket com dados!
+force_destroy = true
+
+# Habilitar versionamento do S3
+enable_versioning = true
