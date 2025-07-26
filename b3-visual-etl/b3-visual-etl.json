@@ -1,0 +1,41 @@
+{
+  "name" : "b3-visual-etl",
+  "jobMode" : "VISUAL",
+  "description" : "",
+  "role" : "arn:aws:iam::830700034340:role/LabRole",
+  "executionProperty" : {
+    "maxConcurrentRuns" : 1
+  },
+  "command" : {
+    "name" : "glueetl",
+    "scriptLocation" : "s3://aws-glue-assets-830700034340-us-east-1/scripts/b3-visual-etl.py",
+    "pythonVersion" : "3"
+  },
+  "defaultArguments" : {
+    "--enable-metrics" : "true",
+    "--enable-spark-ui" : "true",
+    "--extra-py-files" : "s3://aws-glue-studio-transforms-510798373988-prod-us-east-1/gs_common.py,s3://aws-glue-studio-transforms-510798373988-prod-us-east-1/gs_now.py",
+    "--spark-event-logs-path" : "s3://aws-glue-assets-830700034340-us-east-1/sparkHistoryLogs/",
+    "--enable-job-insights" : "true",
+    "--enable-observability-metrics" : "true",
+    "--enable-glue-datacatalog" : "true",
+    "--job-bookmark-option" : "job-bookmark-disable",
+    "--job-language" : "python",
+    "--TempDir" : "s3://aws-glue-assets-830700034340-us-east-1/temporary/"
+  },
+  "maxRetries" : 0,
+  "allocatedCapacity" : 10,
+  "timeout" : 480,
+  "maxCapacity" : 10.0,
+  "glueVersion" : "5.0",
+  "numberOfWorkers" : 10,
+  "workerType" : "G.1X",
+  "executionClass" : "STANDARD",
+  "codeGenConfigurationNodes" : "{\"node-1753490298795\":{\"RenameField\":{\"Inputs\":[\"node-1753490279123\"],\"Name\":\"Rename Field\",\"SourcePath\":[\"Tipo\"],\"TargetPath\":[\"tipo\"]}},\"node-1753493249896\":{\"DynamicTransform\":{\"FunctionName\":\"gs_now\",\"Inputs\":[\"node-1753489806991\"],\"Name\":\"Add Current Timestamp\",\"OutputSchemas\":[{\"Columns\":[{\"Name\":\"Código\",\"Type\":\"string\"},{\"Name\":\"Ação\",\"Type\":\"string\"},{\"Name\":\"Tipo\",\"Type\":\"string\"},{\"Name\":\"Qtde. Teórica\",\"Type\":\"string\"},{\"Name\":\"Part. (%)\",\"Type\":\"null\"},{\"Name\":\"timestamp\",\"Type\":\"timestamp\"}]}],\"Parameters\":[],\"Path\":\"s3://aws-glue-studio-transforms-510798373988-prod-us-east-1/gs_now.py\",\"TransformName\":\"gs_now\",\"Version\":\"1.0.0\"}},\"node-1753490142491\":{\"RenameField\":{\"Inputs\":[\"node-1753493249896\"],\"Name\":\"Rename Field\",\"SourcePath\":[\"Código\"],\"TargetPath\":[\"codigo\"]}},\"node-1753493658888\":{\"SparkSQL\":{\"Inputs\":[\"node-1753490298795\"],\"Name\":\"SQL Query\",\"OutputSchemas\":[{\"Columns\":[{\"Name\":\"timestamp\",\"Type\":\"timestamp\"},{\"Name\":\"codigo\",\"Type\":\"string\"},{\"Name\":\"qtde_teorica\",\"Type\":\"string\"},{\"Name\":\"part_percent\",\"Type\":\"null\"},{\"Name\":\"acao\",\"Type\":\"string\"},{\"Name\":\"tipo\",\"Type\":\"string\"},{\"Name\":\"dias_desde_pregao\",\"Type\":\"int\"}]}],\"SqlAliases\":[{\"Alias\":\"t\",\"From\":\"node-1753490298795\"}],\"SqlQuery\":\"SELECT\\r\\n  *,\\r\\n  datediff(current_date, t.timestamp) AS dias_desde_pregao\\r\\nFROM\\r\\n  t\"}},\"node-1753489806991\":{\"S3ParquetSource\":{\"AdditionalOptions\":{\"EnableSamplePath\":true,\"SamplePath\":\"s3://fiap-2025-tech02-b3-glue-bruno/raw/dt_particao=20250725/IBOV_2025-07-25.parquet\"},\"Exclusions\":[],\"Name\":\"Amazon S3\",\"OutputSchemas\":[{\"Columns\":[{\"Name\":\"Código\",\"Type\":\"string\"},{\"Name\":\"Ação\",\"Type\":\"string\"},{\"Name\":\"Tipo\",\"Type\":\"string\"},{\"Name\":\"Qtde. Teórica\",\"Type\":\"string\"},{\"Name\":\"Part. (%)\",\"Type\":\"double\"}]}],\"Paths\":[\"s3://fiap-2025-tech02-b3-glue-bruno\"],\"Recurse\":true}},\"node-1753490262843\":{\"RenameField\":{\"Inputs\":[\"node-1753490242299\"],\"Name\":\"Rename Field\",\"SourcePath\":[\"Part. (%)\"],\"TargetPath\":[\"part_percent\"]}},\"node-1753490279123\":{\"RenameField\":{\"Inputs\":[\"node-1753490262843\"],\"Name\":\"Rename Field\",\"SourcePath\":[\"Ação\"],\"TargetPath\":[\"acao\"]}},\"node-1753490242299\":{\"RenameField\":{\"Inputs\":[\"node-1753490142491\"],\"Name\":\"Rename Field\",\"SourcePath\":[\"Qtde. Teórica\"],\"TargetPath\":[\"qtde_teorica\"]}},\"node-1753491255901\":{\"S3GlueParquetTarget\":{\"AutoDataQuality\":{\"EvaluationContext\":\"EvaluateDataQuality_node1753491242402\",\"IsEnabled\":true},\"Compression\":\"snappy\",\"Inputs\":[\"node-1753494023736\"],\"Name\":\"Amazon S3\",\"NumberTargetPartitions\":\"0\",\"PartitionKeys\":[[\"tipo\"]],\"Path\":\"s3://fiap-2025-tech02-b3-glue-bruno/refined/\",\"SchemaChangePolicy\":{\"Database\":\"b3_database\",\"EnableUpdateCatalog\":true,\"Table\":\"b3_refined\",\"UpdateBehavior\":\"UPDATE_IN_DATABASE\"}}},\"node-1753494023736\":{\"Aggregate\":{\"Aggs\":[{\"AggFunc\":\"countDistinct\",\"Column\":[\"acao\"]}],\"Groups\":[[\"tipo\"]],\"Inputs\":[\"node-1753493658888\"],\"Name\":\"Aggregate\"}}}",
+  "sourceControlDetails" : {
+    "provider" : "GITHUB",
+    "repository" : "tech-challenge-2",
+    "branch" : "visual-glue-job",
+    "folder" : "b3-visual-etl"
+  }
+}
