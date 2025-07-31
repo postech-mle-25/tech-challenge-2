@@ -123,7 +123,7 @@ def processar_csv_para_parquet(csv_path):
     logging.info(f"Processando arquivo CSV: {csv_path}")
     
     # Tentar diferentes encodings
-    encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+    encodings = ['latin-1', 'utf-8', 'cp1252', 'iso-8859-1']
     csv_content = None
     
     for encoding in encodings:
@@ -141,9 +141,44 @@ def processar_csv_para_parquet(csv_path):
         return None
     
     try:
+        # Log raw CSV content for debugging (first few lines)
+        logging.debug("Primeiras linhas do CSV:\n" + '\n'.join(csv_content.splitlines()[:5]))
+        
         # Processar CSV com pandas
-        df = pd.read_csv(StringIO(csv_content), sep=';', engine='python', skiprows=1)
+        df = pd.read_csv(
+            StringIO(csv_content),
+            sep=';',
+            encoding='latin-1',
+            skiprows=2,
+            skipfooter=2,
+            engine='python',
+            names=['Código', 'Ação', 'Tipo', 'Qtde. Teórica', 'Part. (%)'],
+            usecols=[0, 1, 2, 3, 4],
+            dtype={
+                'Código': str,
+                'Ação': str,
+                'Tipo': str,
+                'Qtde. Teórica': str,
+                'Part. (%)': str  # Read as string to handle commas
+            }
+        )
+        
+        # Converter Part. (%) para float, substituindo vírgulas
+        df['Part. (%)'] = df['Part. (%)'].str.replace(',', '.').astype(float)
+        
+        # Limpar Tipo, extraindo ON, PN, PNA, PNB, UNT
+        df['Tipo'] = df['Tipo'].str.extract(r'^(ON|PN|PNA|PNB|UNT)')[0]
+        
         logging.info(f"DataFrame criado com {len(df)} linhas e {len(df.columns)} colunas")
+        
+        # Validar 'Tipo' column
+        expected_tipos = {'ON', 'PN', 'PNA', 'PNB', 'UNT'}
+        actual_tipos = set(df['Tipo'].dropna().unique())
+        if not actual_tipos.issubset(expected_tipos):
+            logging.warning(f"Valores inesperados em 'Tipo': {actual_tipos - expected_tipos}")
+        
+        # Log sample data
+        logging.info("Amostra do DataFrame (5 primeiras linhas):\n" + df.head().to_string())
         
         # Converter para Arrow Table
         table = pa.Table.from_pandas(df, preserve_index=False)
@@ -158,12 +193,12 @@ def processar_csv_para_parquet(csv_path):
     except Exception as e:
         logging.error(f"Erro ao processar CSV: {e}")
         return None
-
+ 
 def upload_s3_parquet(parquet_buffer):
     """
     Faz upload do buffer Parquet para o S3
     """
-    bucket_name = os.getenv('S3_BUCKET_NAME', 'fiap-2025-tech02-b3-glue')
+    bucket_name = os.getenv('S3_BUCKET_NAME', 'fiap-2025-tech02-b3-glue-119268833495')
     
     try:
         s3 = boto3.client('s3')
@@ -199,10 +234,10 @@ def limpar_arquivos_temporarios():
             for arquivo in os.listdir(temp_path):
                 arquivo_path = os.path.join(temp_path, arquivo)
                 if os.path.isfile(arquivo_path):
-                    os.remove(arquivo_path)
+                    #os.remove(arquivo_path)
                     logging.info(f"Arquivo temporário removido: {arquivo}")
             
-            os.rmdir(temp_path)
+            #os.rmdir(temp_path)
             logging.info("Diretório temporário removido")
             
         except Exception as e:
