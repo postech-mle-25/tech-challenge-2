@@ -38,13 +38,14 @@ resource "aws_s3_bucket_notification" "b3_lambda_trigger" {
 
 # Função Lambda para trigger do Glue
 resource "aws_lambda_function" "glue_trigger" {
-  filename         = "glue_trigger.zip"
+  s3_bucket        = var.bucket_name
+  s3_key           = "scripts/glue_trigger.zip"
   function_name    = "b3-glue-trigger"
-  role            = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole"
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.12"
-  timeout         = 30
-  memory_size     = 128
+  role             = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole"
+  handler          = "lambda_function.lambda_handler"
+  runtime          = "python3.12"
+  timeout          = 30
+  memory_size      = 128
 
   environment {
     variables = {

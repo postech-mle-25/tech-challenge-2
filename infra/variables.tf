@@ -25,7 +25,7 @@ variable "enable_versioning" {
 variable "bucket_name" {
   description = "Nome do bucket S3 para armazenar dados da B3"
   type        = string
-  default     = "fiap-2025-tech02-b3-glue"
+  default     = "fiap-2025-tech02-b3-glue-119268833495"
 
   validation {
     condition     = can(regex("^[a-z0-9][a-z0-9-]*[a-z0-9]$", var.bucket_name))
