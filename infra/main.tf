@@ -67,25 +67,117 @@ resource "aws_lambda_permission" "allow_s3" {
   source_arn    = aws_s3_bucket.b3_glue.arn
 }
 
-# Job do Glue Visual será criado manualmente no AWS Glue Studio
-# para habilitar a interface visual com drag & drop
-# 
-# INSTRUÇÕES PARA CRIAÇÃO MANUAL:
-# 1. Acesse AWS Glue Studio
-# 2. Clique em "Create job" 
-# 3. Selecione "Visual with a blank canvas"
-# 4. Configure:
-#    - Job name: "b3-visual-etl"
-#    - IAM Role: "LabRole" 
-#    - Glue version: "4.0"
-#    - Worker type: "G.1X"
-#    - Number of workers: 2
-#    - Job parameters recomendados:
-#      --source-bucket: [USE O VALOR DO OUTPUT bucket_name]
-#      --target-bucket: [USE O VALOR DO OUTPUT bucket_name]
-#      --TempDir: s3://[USE O VALOR DO OUTPUT bucket_name]/temp/
+# Glue Database
+resource "aws_glue_catalog_database" "b3_database" {
+  name = "b3_database"
+}
 
-# Nome do job visual que será criado manualmente
+# Glue Job
+resource "aws_glue_job" "b3_visual_etl" {
+  name     = "b3-visual-etl"
+  role_arn = aws_iam_role.lambda_glue_role.arn
+  command {
+    script_location = "s3://fiap-2025-tech02-b3-glue-119268833495/scripts/glue_job.py"
+    name            = "glueetl"
+  }
+  default_arguments = {
+    "--source-bucket"         = "fiap-2025-tech02-b3-glue-119268833495"
+    "--target-bucket"         = "fiap-2025-tech02-b3-glue-119268833495"
+    "--TempDir"               = "s3://fiap-2025-tech02-b3-glue-119268833495/temp/"
+    "--job-bookmark-option"   = "job-bookmark-disable"
+  }
+  glue_version      = "4.0"
+  worker_type       = "G.1X"
+  number_of_workers = 2
+  max_retries       = 0
+  timeout           = 2880
+  tags = {
+    Name        = "B3 Visual ETL"
+    Environment = var.environment
+  }
+}
+
+# IAM Role for Lambda and Glue
+resource "aws_iam_role" "lambda_glue_role" {
+  name = "LabRole"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = [
+            "lambda.amazonaws.com",
+            "glue.amazonaws.com"
+          ]
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
+  role       = aws_iam_role.lambda_glue_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "glue_service_role" {
+  role       = aws_iam_role.lambda_glue_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+}
+
+resource "aws_iam_role_policy" "lambda_s3_glue_policy" {
+  name = "LambdaS3GluePolicy"
+  role = aws_iam_role.lambda_glue_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["s3:*"],
+        Resource = [
+          "arn:aws:s3:::fiap-2025-tech02-b3-glue-119268833495",
+          "arn:aws:s3:::fiap-2025-tech02-b3-glue-119268833495/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "glue:StartJobRun",
+          "glue:GetJobRun",
+          "glue:GetJob"
+        ],
+        Resource = [
+          "arn:aws:glue:us-east-1:119268833495:job/b3-visual-etl"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "glue:CreateTable",
+          "glue:UpdateTable"
+        ],
+        Resource = [
+          "arn:aws:glue:us-east-1:119268833495:catalog",
+          "arn:aws:glue:us-east-1:119268833495:database/b3_database",
+          "arn:aws:glue:us-east-1:119268833495:table/b3_database/b3_refined"
+        ]
+      }
+    ]
+  })
+}
+
+# Nome do job visual
 locals {
   visual_job_name = "b3-visual-etl"
 }
@@ -110,7 +202,7 @@ output "lambda_function_name" {
 }
 
 output "glue_job_visual_name" {
-  description = "Nome do job visual do Glue (criado manualmente)"
+  description = "Nome do job visual do Glue"
   value       = local.visual_job_name
 }
 
@@ -121,7 +213,7 @@ output "account_id" {
 }
 
 output "glue_visual_job_parameters" {
-  description = "Parâmetros para configurar o Glue Visual Job manualmente"
+  description = "Parâmetros para configurar o Glue Visual Job"
   value = {
     job_name        = local.visual_job_name
     source_bucket   = aws_s3_bucket.b3_glue.bucket
