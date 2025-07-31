@@ -108,8 +108,8 @@ import boto3
 
 client = boto3.client('glue')
 
-def start_glue_job(job_name, file_name):
-    job = client.start_job_run(JobName=job_name, Arguments={'--triggered-by-file': file_name})
+def start_glue_job(job_name):
+    job = client.start_job_run(JobName=job_name)
     status = client.get_job_run(JobName=job_name, RunId=job['JobRunId'])
     return status['JobRun']['JobRunState']
 
@@ -123,7 +123,7 @@ def lambda_handler(event, context):
         raise Exception("JOB_NAME is not set")
     else:
         try:
-            status = start_glue_job(job_name, file_name)
+            status = start_glue_job(job_name)
             print(f"Job status: {status}")
         except Exception as e:
             print(f"Error running job: {e}")
@@ -203,7 +203,7 @@ resource "aws_glue_catalog_database" "b3_database" {
   name = "b3_database"
 }
 
-# Glue Job (references the uploaded visual script)
+# Glue Job
 resource "aws_glue_job" "b3_visual_etl" {
   name     = "b3-visual-etl"
   role_arn = aws_iam_role.lambda_glue_role.arn
