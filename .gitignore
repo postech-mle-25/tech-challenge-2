@@ -221,3 +221,5 @@ __marimo__/
 terraform.log
 .terraform.tfstate.lock.info
 crash.log
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
