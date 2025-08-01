@@ -306,17 +306,25 @@ User is not authorized to perform: iam:CreateRole
 **Solução**: Use uma role existente como `LabRole` ou solicite permissões administrativas.
 
 #### 5. Erro de Bucket Name Inválido
+```
 Invalid bucket name "fiap-2025-tech02-b3-glue-{AWS_ACCOUNT_ID}"
+```
 
-Solução: Certifique-se de exportar AWS_ACCOUNT_ID antes de executar ingest.py:
+**Solução**: Certifique-se de exportar AWS_ACCOUNT_ID antes de executar ingest.py:
+```
 export AWS_ACCOUNT_ID=$(cd infra && terraform output -raw account_id)
+```
 
 #### 6. Arquivo ingest.py não encontrado
+```
 python: can't open file '/.../infra/ingest.py': [Errno 2] No such file or directory
+```
 
-Solução: Execute python ingest.py a partir do diretório etl/:
+**Solução**: Execute python ingest.py a partir do diretório etl/:
+```
 cd etl/
 python ingest.py
+```
 
 ## Limpeza dos Recursos
 
