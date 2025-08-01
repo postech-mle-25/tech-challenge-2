@@ -89,30 +89,34 @@ AWS Athena: Consultas SQL nos dados catalogados.
 
 ### Credenciais AWS
 Configure suas credenciais AWS usando uma das opções:
-Configure suas credenciais AWS usando uma das opções:
+#### Opção 1: AWS CLI
 
 ```bash
-# Opção 1: AWS CLI
 aws configure
+```
 
-# Opção 2: Variáveis de ambiente
+#### Opção 2: Variáveis de ambiente
+
+```bash
 export AWS_ACCESS_KEY_ID=your_access_key
 export AWS_SECRET_ACCESS_KEY=your_secret_key
 export AWS_DEFAULT_REGION=us-east-1
+```
 
 ## Configuração Centralizada de Conta AWS
 O ID da conta AWS (ex.: 119268833495) está centralizado em infra/variables.tf na variável account_id. Para alterar a conta em todo o projeto:
 
-Edite o default de account_id em infra/variables.tf.
-Execute terraform apply para propagar as alterações nos recursos AWS (bucket, ARNs, scripts).
-Exporte a variável de ambiente para ingest.py:# Exporta o ID da conta AWS do Terraform para uso no ingest.py
+- Edite o default de **account_id** em `infra/variables.tf`.
+- Execute `terraform apply` para propagar as alterações nos recursos AWS (bucket, ARNs, scripts).
+- Exporte a variável de ambiente para ingest.py:
+```
 export AWS_ACCOUNT_ID=$(cd infra && terraform output -raw account_id)
 ```
 
 ## Instalando o Ambiente
 
-### Opção 1: Via pip + requirements
-Crie um arquivo requirements.txt com:
+#### Opção 1: Via pip + requirements
+- Crie um arquivo requirements.txt com:
 
 ```
 python-dotenv==1.0.1
@@ -124,13 +128,13 @@ boto3==1.35.5
 matplotlib==3.9.2
 ```
 
-### Instala as dependências Python listadas em requirements.txt
+- Instala as dependências Python listadas em requirements.txt
 ```
 pip install -r requirements.txt
 ```
-### Opção 2: Via conda
+#### Opção 2: Via conda
 
-Crie o ambiente a partir do arquivo environment.yml:
+- Crie o ambiente a partir do arquivo environment.yml:
 
 ```bash
 conda env create -f environment.yml
