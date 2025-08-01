@@ -198,7 +198,11 @@ def upload_s3_parquet(parquet_buffer):
     """
     Faz upload do buffer Parquet para o S3
     """
-    bucket_name = os.getenv('S3_BUCKET_NAME', 'fiap-2025-tech02-b3-glue-119268833495')
+    account_id = os.getenv('AWS_ACCOUNT_ID')
+    bucket_name = os.getenv('S3_BUCKET_NAME', f'fiap-2025-tech02-b3-glue-{account_id}')
+    if not bucket_name:
+        logging.error("Nome do bucket S3 não configurado")
+        return False
     
     try:
         s3 = boto3.client('s3')
@@ -234,10 +238,10 @@ def limpar_arquivos_temporarios():
             for arquivo in os.listdir(temp_path):
                 arquivo_path = os.path.join(temp_path, arquivo)
                 if os.path.isfile(arquivo_path):
-                    #os.remove(arquivo_path)
+                    os.remove(arquivo_path)
                     logging.info(f"Arquivo temporário removido: {arquivo}")
             
-            #os.rmdir(temp_path)
+            os.rmdir(temp_path)
             logging.info("Diretório temporário removido")
             
         except Exception as e:

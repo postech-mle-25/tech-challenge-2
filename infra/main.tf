@@ -2,9 +2,16 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_caller_identity" "current" {}
+
+locals {
+  account_id  = var.account_id
+  bucket_name = "${var.bucket_name_prefix}-${var.account_id}"  # Constrói bucket_name dinamicamente
+}
+
 # S3 Bucket configurável
 resource "aws_s3_bucket" "b3_glue" {
-  bucket        = var.bucket_name
+  bucket        = local.bucket_name
   force_destroy = var.force_destroy
 
   tags = {
@@ -43,7 +50,7 @@ job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
 
 # Read from S3 raw with partition inference
-source_path = "s3://fiap-2025-tech02-b3-glue-119268833495/raw/"
+source_path = "s3://${local.bucket_name}/raw/"
 spark_df = spark.read.option("basePath", source_path).parquet(f"{source_path}dt_particao=*/")
 spark_df = spark_df.withColumn("dt_particao", regexp_replace(input_file_name(), ".*/dt_particao=(\\d+)/.*", "$1"))
 
@@ -63,12 +70,12 @@ spark_df = spark_df.withColumn("dias_desde_pregao", datediff(current_date(), to_
 
 # Aggregation (requirement 5: numeric summarization)
 agg_df = spark_df.groupBy("Tipo").agg(countDistinct("acao").alias("num_acoes"))
-agg_df.write.mode("overwrite").parquet("s3://fiap-2025-tech02-b3-glue-119268833495/temp/agg/")
+agg_df.write.mode("overwrite").parquet("s3://${local.bucket_name}/temp/agg/")
 
 # Write refined data (requirement 6)
 spark_df.write.mode("append") \
         .partitionBy("dt_particao", "codigo") \
-        .parquet("s3://fiap-2025-tech02-b3-glue-119268833495/refined/")
+        .parquet("s3://${local.bucket_name}/refined/")
 
 # Catalog the table (requirement 7)
 spark.sql("""
@@ -83,7 +90,7 @@ PARTITIONED BY (dt_particao STRING, codigo STRING)
 ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
 STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat'
 OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat'
-LOCATION 's3://fiap-2025-tech02-b3-glue-119268833495/refined/'
+LOCATION 's3://${local.bucket_name}/refined/'
 """)
 spark.sql("MSCK REPAIR TABLE b3_database.b3_refined")
 
@@ -92,6 +99,20 @@ EOT
 
   tags = {
     Name = "B3 Visual ETL Script"
+  }
+}
+
+# Upload the Glue visual job JSON configuration via Terraform
+resource "aws_s3_object" "glue_visual_json" {
+  bucket  = aws_s3_bucket.b3_glue.id
+  key     = "scripts/b3-visual-etl.json"
+  content = templatefile("${path.module}/b3-visual-etl.json.tmpl", {
+    account_id  = var.account_id,
+    bucket_name = local.bucket_name
+  })
+
+  tags = {
+    Name = "B3 Visual ETL JSON Config"
   }
 }
 
@@ -169,7 +190,7 @@ resource "aws_lambda_function" "glue_trigger" {
   s3_bucket        = aws_s3_bucket.b3_glue.bucket
   s3_key           = "scripts/glue_trigger.zip"
   function_name    = "b3-glue-trigger"
-  role             = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole"
+  role             = "arn:aws:iam::${var.account_id}:role/LabRole"
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.12"
   timeout          = 30
@@ -212,9 +233,9 @@ resource "aws_glue_job" "b3_visual_etl" {
     name            = "glueetl"
   }
   default_arguments = {
-    "--source-bucket"         = "fiap-2025-tech02-b3-glue-119268833495"
-    "--target-bucket"         = "fiap-2025-tech02-b3-glue-119268833495"
-    "--TempDir"               = "s3://fiap-2025-tech02-b3-glue-119268833495/temp/"
+    "--source-bucket"         = local.bucket_name
+    "--target-bucket"         = local.bucket_name
+    "--TempDir"               = "s3://${local.bucket_name}/temp/"
     "--job-bookmark-option"   = "job-bookmark-enable"
     "--enable-metrics"        = "true"
     "--enable-spark-ui"       = "true"
@@ -272,8 +293,8 @@ resource "aws_iam_role_policy" "lambda_s3_glue_policy" {
         Effect = "Allow"
         Action = ["s3:*"],
         Resource = [
-          "arn:aws:s3:::fiap-2025-tech02-b3-glue-119268833495",
-          "arn:aws:s3:::fiap-2025-tech02-b3-glue-119268833495/*"
+          "arn:aws:s3:::${local.bucket_name}",
+          "arn:aws:s3:::${local.bucket_name}/*"
         ]
       },
       {
@@ -284,7 +305,7 @@ resource "aws_iam_role_policy" "lambda_s3_glue_policy" {
           "glue:GetJob"
         ],
         Resource = [
-          "arn:aws:glue:us-east-1:119268833495:job/b3-visual-etl"
+          "arn:aws:glue:${var.aws_region}:${var.account_id}:job/b3-visual-etl"
         ]
       },
       {
@@ -304,9 +325,9 @@ resource "aws_iam_role_policy" "lambda_s3_glue_policy" {
           "glue:BatchCreatePartition"
         ],
         Resource = [
-          "arn:aws:glue:us-east-1:119268833495:catalog",
-          "arn:aws:glue:us-east-1:119268833495:database/b3_database",
-          "arn:aws:glue:us-east-1:119268833495:table/b3_database/b3_refined"
+          "arn:aws:glue:${var.aws_region}:${var.account_id}:catalog",
+          "arn:aws:glue:${var.aws_region}:${var.account_id}:database/b3_database",
+          "arn:aws:glue:${var.aws_region}:${var.account_id}:table/b3_database/b3_refined"
         ]
       }
     ]
@@ -317,9 +338,6 @@ resource "aws_iam_role_policy" "lambda_s3_glue_policy" {
 locals {
   visual_job_name = "b3-visual-etl"
 }
-
-# Obter informações da conta atual
-data "aws_caller_identity" "current" {}
 
 # Outputs importantes para segurança
 output "bucket_name" {
@@ -344,7 +362,7 @@ output "glue_job_visual_name" {
 
 output "account_id" {
   description = "ID da conta AWS (para verificação de acesso)"
-  value       = data.aws_caller_identity.current.account_id
+  value       = var.account_id
   sensitive   = true
 }
 

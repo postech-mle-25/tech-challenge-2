@@ -22,13 +22,14 @@ variable "enable_versioning" {
   default     = true
 }
 
-variable "bucket_name" {
-  description = "Nome do bucket S3 para armazenar dados da B3"
+variable "account_id" {
+  description = "ID da conta AWS para ARNs e nomes de recursos"
   type        = string
-  default     = "fiap-2025-tech02-b3-glue-119268833495"
+  default     = "119268833495"  # Altere apenas aqui para mudar em todo o projeto
+}
 
-  validation {
-    condition     = can(regex("^[a-z0-9][a-z0-9-]*[a-z0-9]$", var.bucket_name))
-    error_message = "O nome do bucket deve conter apenas letras minúsculas, números e hífens, começando e terminando com alfanumérico."
-  }
+variable "bucket_name_prefix" {
+  description = "Prefixo do nome do bucket S3 para armazenar dados da B3"
+  type        = string
+  default     = "fiap-2025-tech02-b3-glue"
 }
