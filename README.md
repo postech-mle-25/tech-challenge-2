@@ -12,6 +12,8 @@ Este projeto implementa uma arquitetura serverless na AWS para processamento aut
 
 ### Componentes da Arquitetura
 
+O [diagrama](https://drive.google.com/file/d/16aNVMIx1ZY1VRkv5cgZUs-pSTbK9bYFm/view?usp=sharing) apresenta a arquitetura do projeto, e pode ser encontrado nas descrições abaixo.
+
 #### 1. ETL (Extract, Transform, Load)
 **Localização**: `tech-challenge-2/etl/`
 
@@ -20,6 +22,8 @@ Este projeto implementa uma arquitetura serverless na AWS para processamento aut
 - **b3-visual-etl.py**: Script do AWS Glue (gerenciado via Terraform) que processa dados da pasta raw/, aplica transformações (filtro, renomeação de colunas, cálculo de data, agregação) e salva na pasta `refined/` com particionamento por dt_particao e codigo.
 - **b3-visual-etl.json.tmpl**: Template para configuração visual do Glue (opcional, gerado via Terraform para referência).
 - **visualize.py**: Script opcional para gerar um gráfico de barras a partir dos resultados do Athena.
+
+![Pipeline de Dados](data-pipeline.png)
 
 #### 2. Infraestrutura (Infrastructure as Code)
 **Localização**: `tech-challenge-2/infra/`
@@ -32,6 +36,7 @@ Este projeto implementa uma arquitetura serverless na AWS para processamento aut
   - IAM roles e policies necessárias.
   - Upload automático do código Lambda, Glue script e JSON de configuração.
 
+![Pipeline da Infraestrutura](infra-pipeline.png)
 
 - **variables.tf**: Variáveis de configuração, incluindo o ID da conta AWS (account_id) centralizado.
 - **b3-visual-etl.json.tmpl**: Template para gerar a configuração visual do Glue com o ID da conta AWS.
