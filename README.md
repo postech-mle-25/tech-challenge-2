@@ -12,6 +12,8 @@ Este projeto implementa uma arquitetura serverless na AWS para processamento aut
 
 ### Componentes da Arquitetura
 
+O [diagrama](https://drive.google.com/file/d/16aNVMIx1ZY1VRkv5cgZUs-pSTbK9bYFm/view?usp=sharing) apresenta a arquitetura do projeto, e pode ser encontrado nas descrições abaixo.
+
 #### 1. ETL (Extract, Transform, Load)
 **Localização**: `tech-challenge-2/etl/`
 
@@ -20,6 +22,8 @@ Este projeto implementa uma arquitetura serverless na AWS para processamento aut
 - **b3-visual-etl.py**: Script do AWS Glue (gerenciado via Terraform) que processa dados da pasta raw/, aplica transformações (filtro, renomeação de colunas, cálculo de data, agregação) e salva na pasta `refined/` com particionamento por dt_particao e codigo.
 - **b3-visual-etl.json.tmpl**: Template para configuração visual do Glue (opcional, gerado via Terraform para referência).
 - **visualize.py**: Script opcional para gerar um gráfico de barras a partir dos resultados do Athena.
+
+![Pipeline de Dados](data-pipeline.png)
 
 #### 2. Infraestrutura (Infrastructure as Code)
 **Localização**: `tech-challenge-2/infra/`
@@ -32,6 +36,7 @@ Este projeto implementa uma arquitetura serverless na AWS para processamento aut
   - IAM roles e policies necessárias.
   - Upload automático do código Lambda, Glue script e JSON de configuração.
 
+![Pipeline da Infraestrutura](infra-pipeline.png)
 
 - **variables.tf**: Variáveis de configuração, incluindo o ID da conta AWS (account_id) centralizado.
 - **b3-visual-etl.json.tmpl**: Template para gerar a configuração visual do Glue com o ID da conta AWS.
@@ -132,14 +137,6 @@ matplotlib==3.9.2
 ```
 pip install -r requirements.txt
 ```
-#### Opção 2: Via conda
-
-- Crie o ambiente a partir do arquivo environment.yml:
-
-```bash
-conda env create -f environment.yml
-conda activate tc1
-```
 
 ## Configuração e Deploy
 
@@ -238,7 +235,6 @@ tech-challenge-2/
 │   ├── b3-visual-etl.json.tmpl # Template para configuração Glue
 ├── downloads/            # Arquivos baixados localmente
 ├── requirements.txt      # Dependências Python
-├── environment.yml       # Ambiente conda
 ├── architecture.png      # Diagrama da arquitetura
 ├── b3_visualization.png  # Gráfico gerado (opcional)
 ├── tech_challenge.mp4    # Vídeo de explicação do projeto
