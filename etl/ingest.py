@@ -208,7 +208,11 @@ def upload_s3_parquet(parquet_buffer):
         s3 = boto3.client('s3')
         
         # Gerar chave com particionamento por data
-        data = datetime.now()
+        # data = datetime.now()
+
+        # Usar uma data fixa para testes (ex.: 25/07/2025)
+        data = datetime.strptime('20250725', '%Y%m%d')  # Data fixa para simular
+
         particao = data.strftime('%Y%m%d')
         parquet_key = f"raw/dt_particao={particao}/IBOV_{data.strftime('%Y-%m-%d')}.parquet"
         
